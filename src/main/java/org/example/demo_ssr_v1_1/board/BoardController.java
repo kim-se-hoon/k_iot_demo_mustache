@@ -2,9 +2,12 @@ package org.example.demo_ssr_v1_1.board;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Controller // IoC
 public class BoardController {
@@ -37,6 +40,17 @@ public class BoardController {
 
         boardPersistRepository.save(board);
 
-        return "redirect:/";
+        return "redirect:/board/list";
+    }
+
+    // 게시글 목록 보기
+    // http://localhost:8080/board/list
+    @GetMapping("/board/list")
+    public String list(Model model) {
+
+        List<Board> boardList = boardPersistRepository.findAll();
+        model.addAttribute("boardList", boardList);
+        System.out.println(boardList.stream().toList());
+        return "board/list";
     }
 }

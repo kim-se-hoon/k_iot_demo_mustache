@@ -2,10 +2,12 @@ package org.example.demo_ssr_v1_1.board;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.ResponseBody;
+
+
+import java.util.List;
+
 // DB -- CRUD
 @RequiredArgsConstructor
 @Repository // IoC
@@ -20,5 +22,12 @@ public class BoardPersistRepository {
         entityManager.persist(board);
 
         return board;
+    }
+
+    // 게시글 전체 조회
+    public List<Board> findAll() {
+        return entityManager.createQuery("SELECT b FROM Board b ORDER BY b.createdAt DESC")
+                .getResultList();
+
     }
 }

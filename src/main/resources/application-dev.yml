@@ -37,13 +37,13 @@ spring:
       enabled: true
 
   # 초기 데이터 로딩 설정
-#  sql:
-#    init:
-#      # 2.5 이상 버전부터 명시를 해야 insert 처리 됨
-#      mode: always
-#      # 애플리케이션 시작시 실행할 SQL 파일 위치
-#      data-locations:
-#        - classpath:db/data.sql
+  sql:
+    init:
+      # 2.5 이상 버전부터 명시를 해야 insert 처리 됨
+      mode: always
+      # 애플리케이션 시작시 실행할 SQL 파일 위치
+      data-locations:
+        - classpath:db/data.sql
 
   # JPA 설정
   jpa:
