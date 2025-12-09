@@ -13,6 +13,7 @@ import java.sql.Timestamp;
 @Entity
 @Table(name = "user_tb")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String name;
