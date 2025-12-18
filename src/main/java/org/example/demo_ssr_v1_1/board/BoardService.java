@@ -1,15 +1,16 @@
-
 package org.example.demo_ssr_v1_1.board;
 
 import lombok.RequiredArgsConstructor;
 import org.example.demo_ssr_v1_1._core.errors.exception.Exception403;
 import org.example.demo_ssr_v1_1._core.errors.exception.Exception404;
+import org.example.demo_ssr_v1_1.reply.ReplyRepository;
 import org.example.demo_ssr_v1_1.user.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,36 +18,68 @@ import java.util.stream.Collectors;
 public class BoardService {
 
     private final BoardRepository boardRepository;
+    private final ReplyRepository replyRepository;
 
     /**
-     * 게시글 목록 조회
+     * 게시글 목록 조회 (페이징 처리)
      * 트랜잭션
      *  - 읽기 전용 트랜잭션 - 성능 최적화
      * @return 게시글 목록 (생성일 기준으로 내림차순)
      */
-    public List<BoardResponse.ListDTO> 게시글목록조회() {
-        // 자바문법
-        // 데이터 타입을 변환 해서 맞춰 주어야 한다.
-        List<Board> boardList = boardRepository.findAllWithUserOrderByCreatedAtDesc();
-        // List<Board> ---> List<BoardResponse.ListDTO>
-        // 1. 반복문
-//        List<BoardResponse.ListDTO> dotList = new ArrayList<>();
-//        for(Board board : boardList) {
-//            BoardResponse.ListDTO dto = new BoardResponse.ListDTO(board);
-//            dotList.add(dto);
-//        }
+    public BoardResponse.PageDTO 게시글목록조회(int page, int size, String keyword) {
 
-        // 2. 람다 표현식
-//        return boardList.stream()
-//                .map(board -> new BoardResponse.ListDTO(board))
-//                .collect(Collectors.toList());
+        //** 상한선 제한 **
+        // size 는 기본값 5, 최소 1, 최대 50으로 제한
+        // 페이지 번호가 음수가 되는 것을 막습니다.
+        int validPage = Math.max(0, page); // 양수값 보장
+        // 최대값 제한    // 최대값 제한 50으로 보장
+        // 최소값 제한    //  1 , -50 (양수값 보장) 최소값
+        int validSize = Math.max(1, Math.min(50, size));
 
-        // 3. 참조 메서드
-        return boardList.stream()
-                .map(BoardResponse.ListDTO::new)
-                .collect(Collectors.toList());
-        //return dotList;
+        // 정렬기준
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt" );
+        Pageable pageable = PageRequest.of(validPage, validSize, sort);
+        // [..스프링..] [검색][초기화]
+        Page<Board> boardPage;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            boardPage = boardRepository.findByTitleContainingOrContentContaining(keyword.trim(), pageable);
+        } else {
+            boardPage = boardRepository.findAllWithUserOrderByCreatedAtDesc(pageable);
+        }
+
+        return new BoardResponse.PageDTO(boardPage);
     }
+
+
+//    /**
+//     * 게시글 목록 조회
+//     * 트랜잭션
+//     *  - 읽기 전용 트랜잭션 - 성능 최적화
+//     * @return 게시글 목록 (생성일 기준으로 내림차순)
+//     */
+//    public List<BoardResponse.ListDTO> 게시글목록조회() {
+//        // 자바문법
+//        // 데이터 타입을 변환 해서 맞춰 주어야 한다.
+//        List<Board> boardList = boardRepository.findAllWithUserOrderByCreatedAtDesc();
+//        // List<Board> ---> List<BoardResponse.ListDTO>
+//        // 1. 반복문
+////        List<BoardResponse.ListDTO> dotList = new ArrayList<>();
+////        for(Board board : boardList) {
+////            BoardResponse.ListDTO dto = new BoardResponse.ListDTO(board);
+////            dotList.add(dto);
+////        }
+//
+//        // 2. 람다 표현식
+    ////        return boardList.stream()
+    ////                .map(board -> new BoardResponse.ListDTO(board))
+    ////                .collect(Collectors.toList());
+//
+//        // 3. 참조 메서드
+//        return boardList.stream()
+//                .map(BoardResponse.ListDTO::new)
+//                .collect(Collectors.toList());
+//        //return dotList;
+//    }
 
     public BoardResponse.DetailDTO 게시글상세조회(Long boardId) {
 
@@ -111,8 +144,12 @@ public class BoardService {
         if(!boardEntity.isOwner(sessionUserId)) {
             throw new Exception403("삭제 권한이 없습니다");
         }
+        // 게시글 삭제 시 제약 오류 발생 하기 때문에 삭제 후 게시글 삭제 처리 해야 함
+        replyRepository.deleteByBoardId(boardId);
+
         // 4
-        boardRepository.deleteById(boardId);
+        boardRepository.deleteById(boardId); // 제약 오류 발생
+
     }
 
 

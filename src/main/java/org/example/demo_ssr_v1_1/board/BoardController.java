@@ -1,9 +1,8 @@
+
 package org.example.demo_ssr_v1_1.board;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
-import org.example.demo_ssr_v1_1._core.errors.exception.*;
 import org.example.demo_ssr_v1_1.reply.ReplyResponse;
 import org.example.demo_ssr_v1_1.reply.ReplyService;
 import org.example.demo_ssr_v1_1.user.User;
@@ -12,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -21,7 +21,7 @@ import java.util.List;
 public class BoardController {
 
     private final BoardService boardService;
-    private final ReplyService replyService;
+    private final ReplyService replyService; // 추가
 
     /**
      * 게시글 수정 화면 요청
@@ -61,19 +61,42 @@ public class BoardController {
         return "redirect:/board/list";
     }
 
+    /**
+     * 게시글 목록 페이징 처리 기능 추가
+     * @param model
+     * @return
+     * // 예시:  /board/list?page=1&size=5&keyword="사용자가입력값"
+     */
+    @GetMapping({"/board/list", "/"})
+    public String boardList(Model model,
+                            @RequestParam(defaultValue = "1") int page,
+                            @RequestParam(defaultValue = "3") int size,
+                            @RequestParam(required = false) String keyword) {
+
+        int pageIndex = Math.max(0, page - 1);
+        BoardResponse.PageDTO boardPage = boardService.게시글목록조회(pageIndex, size, keyword);
+        model.addAttribute("boardPage", boardPage);
+        return "board/list";
+    }
+
+
 
     /**
+     * TODO - 삭제 예정
      * 게시글 목록 화면 요청
      * @param model
      * @return
      */
-    @GetMapping({"/board/list", "/"})
-    public String boardList(Model model) {
-        List<BoardResponse.ListDTO> boardList = boardService.게시글목록조회();
-        model.addAttribute("boardList", boardList);
+//    @GetMapping({"/board/list", "/"})
+//    public String boardList(Model model) {
+//        List<BoardResponse.ListDTO> boardList = boardService.게시글목록조회();
+//        model.addAttribute("boardList", boardList);
+//
+//        return "board/list";
+//    }
 
-        return "board/list";
-    }
+
+
 
     /**
      * 게시글 작성 화면 요청
@@ -118,27 +141,28 @@ public class BoardController {
 
     /**
      * 게시글 상세 보기 화면 요청
-     * @param boardid
+     * @param boardId
      * @param model
      * @return
      */
     @GetMapping("board/{id}")
-    public String detail(@PathVariable(name = "id") Long boardid, Model model, HttpSession session) {
+    public String detail(@PathVariable(name = "id") Long boardId, Model model, HttpSession session) {
 
-        BoardResponse.DetailDTO board = boardService.게시글상세조회(boardid);
+        BoardResponse.DetailDTO board = boardService.게시글상세조회(boardId);
 
         // 세션에 로그인 사용자 정보 조회(없을 수도 있음)
         User sessionUser = (User)  session.getAttribute("sessionUser");
         boolean isOwner = false;
         // 힌트 - 만약 응답 DTO 에 담겨 있는 정보과
-        // SessionUser 담겨 정보를 확인하여 처리 가능
+        // SessionUser 담겨 정보를 확인하여 처리 가능 
         if(sessionUser != null && board.getUserId() != null) {
             isOwner = board.getUserId().equals(sessionUser.getId());
         }
+
         // 댓글 목록 조회 (추가)
-        // 로그인 안 한 상태에서 댓글 목록 요청시에 sessionUsrId 는 null 값이다.
+        // 로그인 안 한 상태에서 댓글 목록 요청시에 sessionUserId 는 null 값이다.
         Long sessionUserId = sessionUser != null ? sessionUser.getId() : null;
-        List<ReplyResponse.ListDTO> replyList = replyService.댓글목록조회(boardid, sessionUserId);
+        List<ReplyResponse.ListDTO> replyList = replyService.댓글목록조회(boardId, sessionUserId);
 
         model.addAttribute("isOwner", isOwner);
         model.addAttribute("board", board);
