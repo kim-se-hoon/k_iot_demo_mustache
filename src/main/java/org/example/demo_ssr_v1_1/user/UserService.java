@@ -161,4 +161,12 @@ public class UserService {
 
         return userEntity;
     }
+
+    public User 사용자이름조회(String username) {
+        // 사용자 이름 여부만 조회 하는 기능
+        return userRepository.findByUsername(username).orElse(null);
+    }
+    public void 소셜회원가입(User user) {
+        userRepository.save(user);
+    }
 }

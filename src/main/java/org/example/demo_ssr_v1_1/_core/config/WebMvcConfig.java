@@ -5,9 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.demo_ssr_v1_1._core.interceptor.AdminInterceptor;
 import org.example.demo_ssr_v1_1._core.interceptor.LoginInterceptor;
 import org.example.demo_ssr_v1_1._core.interceptor.SessionInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -47,6 +45,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/login",
                         "/join",
                         "/logout",
+                        "/user/kakao",   // 카카오 리다이렉트 URI는 제외
                         "/board/list",
                         "/",
                         "/board/{id:\\d+}",
