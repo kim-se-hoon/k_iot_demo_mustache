@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.domain.Page;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -56,7 +55,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false) // null 허용 안함
-    @ColumnDefault("'LOCAL'") // 문자열이므로 작은 따옴표 필수
+    @ColumnDefault("'LOCAL'") // 문자열이므로 작은 따옴표 필수 !
     private OAuthProvider provider;
 
     @Builder
@@ -71,12 +70,13 @@ public class User {
         this.profileImage = profileImage;  // 추가
         this.provider = provider;
 
-        // 방어적 코드 작성: 만약 null 값이면 기본값 LOCAL 로 저장
-        if (provider == null) {
+        // 방어적 코드 작성 : 만약 null 값이면 기본값 LOCAL 로 저장
+        if(provider == null) {
             this.provider = OAuthProvider.LOCAL;
         } else {
             this.provider = provider;
         }
+
     }
 
     // 회원정보 수정 비즈니스 로직 추가
@@ -133,16 +133,22 @@ public class User {
     // 분기 처리 (머스태치 화면에서는 서버에 저장된 이미지든, URL 이미지 이든 그냥
     // getProfilePath 변수를 호출하면 알아서 셋팅 되게 하고 싶다.
     public String getProfilePath() {
-        if (this.profileImage == null) {
+        if(this.profileImage == null) {
             return null;
         }
-        // https 로 시작하면 소셜 이미지  URL 그대로 리턴
+        // https 로 시작하면 소셜 이미지 URL 그대로 리턴
         if (this.profileImage.startsWith("http")) {
-            return this.profileImage;
+            return  this.profileImage;
         }
         // 아니면 (로컬 이미지) 폴더 경로 붙여서 리턴
         return "/images/" + this.profileImage;
     }
 
+    // true, false
+    public boolean isLocal() {
+        // LOCAL -> true
+        // KAKAO -> false
+        return this.provider == OAuthProvider.LOCAL;
+    }
 
 }
