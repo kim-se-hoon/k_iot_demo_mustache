@@ -23,4 +23,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsernameAndPasswordWithRoles(@Param("username") String username,
                                                       @Param("password") String password);
 
+    /**
+     * 로그인 시  역할(ROLE) 정보까지 함께 조회되는 메서드
+     * - 세션에 저장된 User 객체에서 isAdmin(), getRoleDisplay() 등을 바로 사용할 수 있다.
+     */
+    @Query("SELECT distinct u from User u left join fetch u.roles r " +
+            "WHERE u.username = :username ")
+    Optional<User> findByUsernameWithRoles(@Param("username") String username);
+
 }
