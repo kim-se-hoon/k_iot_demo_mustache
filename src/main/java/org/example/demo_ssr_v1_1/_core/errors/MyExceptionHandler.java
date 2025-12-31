@@ -3,7 +3,6 @@ package org.example.demo_ssr_v1_1._core.errors;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.example.demo_ssr_v1_1._core.errors.exception.*;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,13 +20,24 @@ public class MyExceptionHandler {
 
     // 내가 지켜볼 예외를 명시를 해주면 ControllerAdvice 가 가지고와 처리 함
     @ExceptionHandler(Exception400.class)
-    public String ex400(Exception400 e, HttpServletRequest request) {
+    @ResponseBody // 데이터 반환으로 변경 처리
+    public ResponseEntity<String> ex400(Exception400 e, HttpServletRequest request) {
         log.warn("=== 400 에러 발생  ===");
         log.warn("요청 URL : {}", request.getRequestURL());
         log.warn("에러 메세지 : {}", e.getMessage());
         log.warn("예외 클래스 : {}", e.getClass().getSimpleName());
-        request.setAttribute("msg", e.getMessage());
-        return "err/400";
+
+        // 방어적 코드 추가
+        String message = e.getMessage() != null ? e.getMessage() : "잘못된 요청 입니다";
+        String script = "<script>" +
+                "alert('" + message +"');" +
+                "history.back();" +
+                "</script>";
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.TEXT_HTML)
+                .body(script);
+
     }
 
     @ExceptionHandler(Exception401.class)

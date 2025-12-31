@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.demo_ssr_v1_1._core.errors.exception.Exception400;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -11,7 +12,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-// 엔티티 화면 보고 설계해 보세요.
 @NoArgsConstructor
 @Data
 @Table(name = "user_tb")
@@ -25,7 +25,14 @@ public class User {
     @Column(unique = true)
     private String username;
     private String password;
+    // 이메일 유니크 설정
+    @Column(unique = true)
     private String email;
+
+    // 자신의 포인트 추가
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    private Integer point = 0;
 
     @CreationTimestamp
     private Timestamp createdAt;
@@ -33,22 +40,6 @@ public class User {
     //@Column(nullable = false)
     private String profileImage; // 추가
 
-    /**
-     * User (1) : UserRole(N)
-     * User 가 UserRole 리스트를 관리합니다 (단방향)
-     * 실제 DB 의 'user_role_tb' 테이블에 user_id 라는 fK 컬럼 생깁니다.
-     *
-     * CascadeType.ALL
-     * - 운명 공동체 User 를 저장하면 Role 로 자동 저장되고,
-     * User 를 삭제하면 가지고 있던 Role 들도 다 같이 삭제됩니다.
-     * (홍길동 (관리자, 일반사용자) 삭제하면 userRole 2가지 row도 자동 삭제 됩니다.
-     *
-     * orphanRemoval = true
-     * 리스와 DB의 동기화 입니다.
-     * Java의 roles 리스에서 요소(Role)를 .remove() 하거나 .clear() 하면
-     * DB에서도 해당 데이터( DELETE)가 실제도 처리 됩니다.
-     */
-    // 나중에 다른 개발자가 findById(쿼리 메서드 호출할 때 신경 쓸 필요없이 전부 role 까지 반환 해줌)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private List<UserRole> roles = new ArrayList<>();
@@ -61,14 +52,13 @@ public class User {
     @Builder
     public User(Long id, String username, String password,
                 String email, Timestamp createdAt, String profileImage,
-                OAuthProvider provider) {
+                OAuthProvider provider, Integer point) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.email = email;
         this.createdAt = createdAt;
         this.profileImage = profileImage;  // 추가
-        this.provider = provider;
 
         // 방어적 코드 작성 : 만약 null 값이면 기본값 LOCAL 로 저장
         if(provider == null) {
@@ -77,6 +67,7 @@ public class User {
             this.provider = provider;
         }
 
+        this.point = (point != null) ? point : 0;
     }
 
     // 회원정보 수정 비즈니스 로직 추가
@@ -149,6 +140,34 @@ public class User {
         // LOCAL -> true
         // KAKAO -> false
         return this.provider == OAuthProvider.LOCAL;
+    }
+
+
+    /**
+     * 포인트 차감
+     * @param amount (차감할 포인트 값)
+     * @throws Exception400 포인트가 부족할 경우
+     */
+    public void deductPoint(Integer amount) {
+        if(amount == null || amount <= 0) {
+            throw new Exception400("차감할 포인트는 0보다 커야 합니다");
+        }
+        if(this.point < amount) {
+            throw new Exception400("포인트가 부족합니다 현재 포인트: " + this.point);
+        }
+        this.point -=  amount;
+    }
+
+    /**
+     * 포인트 차감
+     * @param amount (차감할 포인트 값)
+     * @throws Exception400 포인트가 부족할 경우
+     */
+    public void chargePoint(Integer amount) {
+        if(amount == null || amount <= 0) {
+            throw new Exception400("차감할 포인트는 0보다 커야 합니다");
+        }
+        this.point +=  amount;
     }
 
 }

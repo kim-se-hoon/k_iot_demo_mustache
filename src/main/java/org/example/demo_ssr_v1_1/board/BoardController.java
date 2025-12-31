@@ -1,8 +1,8 @@
-
 package org.example.demo_ssr_v1_1.board;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.example.demo_ssr_v1_1.purchase.PurchaseService;
 import org.example.demo_ssr_v1_1.reply.ReplyResponse;
 import org.example.demo_ssr_v1_1.reply.ReplyService;
 import org.example.demo_ssr_v1_1.user.User;
@@ -22,6 +22,7 @@ public class BoardController {
 
     private final BoardService boardService;
     private final ReplyService replyService; // 추가
+    private final PurchaseService purchaseService; // 추가
 
     /**
      * 게시글 수정 화면 요청
@@ -75,28 +76,12 @@ public class BoardController {
 
         int pageIndex = Math.max(0, page - 1);
         BoardResponse.PageDTO boardPage = boardService.게시글목록조회(pageIndex, size, keyword);
+        //이 코드는  머스태치 파일에  boardPage 데이터를 내려 주고 있다. 
         model.addAttribute("boardPage", boardPage);
         model.addAttribute("keyword", keyword != null ? keyword : "");
+
         return "board/list";
     }
-
-
-
-    /**
-     * TODO - 삭제 예정
-     * 게시글 목록 화면 요청
-     * @param model
-     * @return
-     */
-//    @GetMapping({"/board/list", "/"})
-//    public String boardList(Model model) {
-//        List<BoardResponse.ListDTO> boardList = boardService.게시글목록조회();
-//        model.addAttribute("boardList", boardList);
-//
-//        return "board/list";
-//    }
-
-
 
 
     /**
@@ -149,20 +134,19 @@ public class BoardController {
     @GetMapping("board/{id}")
     public String detail(@PathVariable(name = "id") Long boardId, Model model, HttpSession session) {
 
-        BoardResponse.DetailDTO board = boardService.게시글상세조회(boardId);
-
         // 세션에 로그인 사용자 정보 조회(없을 수도 있음)
         User sessionUser = (User)  session.getAttribute("sessionUser");
+        Long sessionUserId = sessionUser != null ? sessionUser.getId() : null;
+
+        BoardResponse.DetailDTO board = boardService.게시글상세조회(boardId, sessionUserId);
         boolean isOwner = false;
         // 힌트 - 만약 응답 DTO 에 담겨 있는 정보과
         // SessionUser 담겨 정보를 확인하여 처리 가능 
         if(sessionUser != null && board.getUserId() != null) {
             isOwner = board.getUserId().equals(sessionUser.getId());
         }
-
         // 댓글 목록 조회 (추가)
         // 로그인 안 한 상태에서 댓글 목록 요청시에 sessionUserId 는 null 값이다.
-        Long sessionUserId = sessionUser != null ? sessionUser.getId() : null;
         List<ReplyResponse.ListDTO> replyList = replyService.댓글목록조회(boardId, sessionUserId);
 
         model.addAttribute("isOwner", isOwner);
@@ -170,6 +154,20 @@ public class BoardController {
         model.addAttribute("replyList", replyList);
 
         return "board/detail";
+    }
+
+    // /board/{{board.id}}/purchase
+
+    @PostMapping("/board/{boardId}/purchase")
+    public String purchase(@PathVariable Long boardId, HttpSession session) {
+        // 1. 인증검사 - 로그인 인터셉터가 동작 함
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        // 포인트 차감
+        // 구매 내역 저장 (insert)...
+        purchaseService.구매하기(sessionUser.getId(), boardId);
+
+        return "redirect:/board/" + boardId;
+
     }
 
 }
