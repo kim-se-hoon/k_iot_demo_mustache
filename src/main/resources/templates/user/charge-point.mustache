@@ -87,8 +87,8 @@
         $chargeBtn.addEventListener('click', function () {
 
             // step 1 - 결제 사전 준비
-            // 우리 서버에 이 금액으로 주문번호(merchant-uid) 를 만들어 줘 요청 함
-            // 이유 : 보안을 위해 주문번호는 반드시 백엔드에 생성해야 합니다.
+            // 우리 서버에 이 금액으로 주문번호(merchant_uid) 를 만들어 줘 요청 함
+            // 이유 : 보안을 위해 주문번호는 반드시 백엔드에드 생성해야 합니다.
             fetch("/api/payment/prepare", {
                 method: 'POST',
                 headers: {
@@ -97,48 +97,82 @@
                 body: JSON.stringify({amount: selectedAmount})
             })
                     .then(res => {
-                        // 200 ~ 299 이 아닌 400번 500번 들어오면 실패
-                        if (!res.ok) {
+                        // 200 ~ 299 이 아닌 400 번 500 대 들어 온다면 실패
+                        if(!res.ok) {
                             throw Error("주문번호 생성 실패");
                         }
                         return res.json(); // json 문자열을 js Object 파싱 처리
                     })
-                    .then(date => {
-                        console.log('data object 확인 ' + date.amount);
-                        const merchantUid = date.merchant_uid;
+                    .then(data => {
+                        console.log('data object 확인 ' + data.amount);
+                        const merchantUid = data.merchant_uid;
                         const IMP = window.IMP;
                         IMP.init("imp37467024");
                         IMP.request_pay(
                                 {
-                                    channelKey: "channel-key-0c184b59-ccaa-4bda-bdd7-8039aa0254f0",
+                                    channelKey: 'channel-key-0c184b59-ccaa-4bda-bdd7-8039aa0254f0',
                                     pay_method: "card",
                                     merchant_uid: merchantUid, // 우리 서버에서 만든 '주문 고유 번호'
                                     name: "포인트 충전", // 결제창에 뜰 상품명
                                     amount: selectedAmount,
                                     buyer_email: '{{user.email}}',
-                                    buyer_name: '{{user.username}}'
+                                    buyer_name: '{{user.username}}',
                                 },
                                 function (response) {
                                     // 결제 종료 시 호출되는 콜백 함수
                                     // response.imp_uid 값으로 결제 단건조회 API를 호출하여 결제 결과를 확인하고,
-                                    if (response.success()) {
-                                        alert("포트원에서만 결제 성공 단 우리 서버에서 검증해야 함")
+                                    if(response.success) {
+                                        // 확인 하는 과정이 필요 함
+                                        console.log(response);
+                                        verifyPayment(response.imp_uid, response.merchant_uid);
+
                                     } else {
                                         alert("결제에 실패했습니다\n에러내용" + response.error_msg);
                                     }
-
                                 },
                         );
+
                     })
                     .catch(err => {
                         alert(err.message);
                     })
+
             ;
 
         });
 
+        // 5. 서버 검증 함수 (최종 승인)
+        //--------------------------------
+        function verifyPayment(imp_uid, merchant_uid) {
+            fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    impUid: imp_uid,
+                    merchantUid: merchant_uid
+                })
+            }).then(res => {
 
-
+                if(!res.ok) {
+                    // 200 ~ 299 가 아닌 값이 들어 왔을 때 처리
+                    return res.json().then((e) => {
+                        // 아래 catch 로 잡힘!!
+                        throw new Error(e.message);
+                    });
+                }
+                // 성공
+                // 상자를 뜯어서 내용물을(JSON문자열) 꺼내서 js Object로 변환 해!
+                return res.json();
+            })
+                    .then(data => {
+                        // 모든 검증 통과 (서버단에서 포인트 충전 완료)
+                        alert(`충전이 완료되었습니다\n충전된 금액:${data.amount}`);
+                        location.href = '/user/detail';
+                    })
+                    .catch(err => {
+                        alert('결제 검증에 실패했습니다\n관리자에게 문의하세요');
+                    });
+        }
     }); // end of DOMContentLoaded
 
 </script>

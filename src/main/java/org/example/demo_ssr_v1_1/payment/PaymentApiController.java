@@ -39,4 +39,34 @@ public class PaymentApiController {
                         "amount", prepareDTO.getAmount(),
                         "imp_key", prepareDTO.getImpKey()));
     }
+
+    // /api/payment/verify
+    // http://localhost:8080/api/payment/verify
+    @PostMapping("/api/payment/verify")
+    public ResponseEntity<?> verifyPayment(@RequestBody PaymentRequest.VerifyDTO reqDTO,
+                                           HttpSession session) {
+
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        if(sessionUser == null) {
+            return  ResponseEntity.status(401).body(Map.of("message",
+                    "로그인이 필요합니다"));
+        }
+
+        reqDTO.validate();
+
+        // 3. 서비스단 코드 설계
+        PaymentResponse.VerifyDTO verifyDTO = paymentService.결제검증및충전(
+                sessionUser.getId(),
+                reqDTO.getImpUid(),
+                reqDTO.getMerchantUid()
+        );
+        // 세션에 사용자 포인트 즉시 업데이트
+        sessionUser.setPoint(verifyDTO.getCurrentPoint());
+        // 반드시 갱신해주어야 함.
+        session.setAttribute("sessionUser", sessionUser);
+
+        return ResponseEntity.ok().body(verifyDTO);
+    }
+
+
 }
