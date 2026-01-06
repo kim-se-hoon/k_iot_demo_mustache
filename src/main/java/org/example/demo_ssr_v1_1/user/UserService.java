@@ -63,12 +63,12 @@ public class UserService {
 
         MultiValueMap<String, String> tokenParams = new LinkedMultiValueMap<>();
         tokenParams.add("grant_type", "authorization_code");
-        tokenParams.add("client_id", "a29c279811318c09b37aeaeb8319024e");
+        tokenParams.add("client_id", "42c78e6e9bc9e7a4deb0b7c90e1bf77b");
         tokenParams.add("redirect_uri", "http://localhost:8080/user/kakao");
         tokenParams.add("code", code);
 
         // TODO - env 파일에 옮겨야 함 시크릿 키 추가(노출 금지)
-        tokenParams.add("client_secret", "m2rBlEcfYhVX1wZWj7mXi9Uy1cCDNKHm");
+        tokenParams.add("client_secret", "FjhhkZyNOdUvg5RWL1syktEJYNWyO6HJ");
 
         HttpEntity<MultiValueMap<String, String>> tokenRequest = new HttpEntity<>(tokenParams, tokenHeaders);
         ResponseEntity<UserResponse.OAuthToken> tokenResponse = restTemplate.exchange(

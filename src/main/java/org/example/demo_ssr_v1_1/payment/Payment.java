@@ -40,8 +40,14 @@ public class Payment {
     @Column(nullable = false)
     private String status;
 
+    // TODO 삭제 예정
     @CreationTimestamp
     private Timestamp timestamp;
+
+    // 추가
+    @CreationTimestamp
+    private Timestamp createdAt;
+
 
     @Builder
     public Payment(Long id, String impUid, String merchantUid,

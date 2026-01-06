@@ -41,7 +41,6 @@ public class PaymentApiController {
     }
 
     // /api/payment/verify
-    // http://localhost:8080/api/payment/verify
     @PostMapping("/api/payment/verify")
     public ResponseEntity<?> verifyPayment(@RequestBody PaymentRequest.VerifyDTO reqDTO,
                                            HttpSession session) {
@@ -67,6 +66,5 @@ public class PaymentApiController {
 
         return ResponseEntity.ok().body(verifyDTO);
     }
-
 
 }
