@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
@@ -18,4 +19,19 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COUNT(p) > 0 FROM Payment p WHERE p.merchantUid = :merchantUid")
     boolean existsByMerchantUid(@Param("merchantUid") String merchantUid);
 
+    // 사용자별 결제 내역 조회 (최신순)
+    @Query("""
+           SELECT p FROM Payment p
+           WHERE p.user.id = :userId         
+           ORDER BY p.createdAt DESC         
+        """)
+    List<Payment> findAllByUserId(@Param("userId") Long userId);
+
+
+    @Query("""
+          SELECT p from Payment p 
+          JOIN FETCH p.user u
+          WHERE p.id = :id
+    """)
+    Payment findByIdWithUser(@Param("id") Long paymentId);
 }
